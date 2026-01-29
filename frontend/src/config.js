@@ -18,7 +18,15 @@ export const API_ENDPOINTS = {
   TRANSACTION_BY_ID: (id) => `/transactions/${id}`,
   UPDATE_TRANSACTION_CATEGORY: (id) => `/transactions/${id}/category`,
   
-  // Categories (will add later)
+  // Categories
   CATEGORIES: '/categories',
   CATEGORY_RULES: '/categories/rules',
+  RECATEGORIZE_ALL: '/categories/recategorize-all',
+  RECATEGORIZE_TRANSACTION: (id) => `/categories/recategorize-transaction/${id}`,
+  
+  // Budgets
+  BUDGETS: '/budgets',
+  BUDGETS_WITH_SPENDING: '/budgets/with-spending',
+  BUDGET_BY_ID: (id) => `/budgets/${id}`,
+  BUDGET_WITH_SPENDING_BY_ID: (id) => `/budgets/${id}/with-spending`,
 };

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config';
 
@@ -30,15 +31,15 @@ const AccountForm = ({ account = null, onSuccess, onCancel }) => {
     try {
       if (isEditing) {
         await api.put(API_ENDPOINTS.ACCOUNT_BY_ID(account.id), payload);
-        alert('Account updated successfully!');
+        toast.success('Account updated successfully!');
       } else {
         await api.post(API_ENDPOINTS.ACCOUNTS, payload);
-        alert('Account created successfully!');
+        toast.success('Account created successfully!');
       }
       onSuccess();
     } catch (error) {
       console.error('Error saving account:', error);
-      alert(error.response?.data?.detail || 'Failed to save account');
+      toast.error(error.response?.data?.detail || 'Failed to save account');
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config';
@@ -26,14 +27,13 @@ const Login = () => {
       const { access_token } = response.data;
       
       login(access_token);
+      toast.success('Login successful! Welcome back!');
       navigate('/dashboard');
     } catch (error) {
-      if (error.response?.status === 401) {
-        alert('User not registered. Please register first!');
-      } else {
-        alert(error.response?.data?.detail || 'Login failed!');
+        // console.log('Full error:', error.response);
+        // console.log('Error data:', error.response?.data);
+        toast.error(error.response?.data?.detail || 'Login failed!');
       }
-    }
   };
 
   return (

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config';
 import Header from '../common/Header';
@@ -110,13 +111,13 @@ const Register = () => {
 
     try {
       const response = await api.post(API_ENDPOINTS.REGISTER, formData);
-      alert('Registration successful!');
+      toast.success('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {
       if (error.response?.status === 409) {
-        alert('User already registered with this email or phone number!');
+        toast.error('User already registered with this email or phone number!');
       } else {
-        alert(error.response?.data?.detail || 'Registration failed!');
+        toast.error(error.response?.data?.detail || 'Registration failed!');
       }
     }
   };

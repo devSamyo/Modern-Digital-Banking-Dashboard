@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import AccountForm from './AccountForm';
 import Modal from '../common/Modal';
 import api from '../../services/api';
@@ -15,11 +16,11 @@ const AccountsList = ({ accounts, loading, onReload, onViewTransactions }) => {
 
     try {
       await api.delete(API_ENDPOINTS.ACCOUNT_BY_ID(accountId));
-      alert('Account deleted successfully!');
+      toast.success('Account deleted successfully!');
       onReload();
     } catch (error) {
       console.error('Error deleting account:', error);
-      alert(error.response?.data?.detail || 'Failed to delete account');
+      toast.error(error.response?.data?.detail || 'Failed to delete account');
     }
   };
 
