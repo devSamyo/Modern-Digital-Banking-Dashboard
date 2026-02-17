@@ -15,7 +15,7 @@ class Budget(Base):
     created_at: Mapped[str] = mapped_column(TIMESTAMP, server_default=func.now())
     
     # Relationship
-    user = relationship("User", back_populates="budgets")
+    user = relationship("User", back_populates="budgets", lazy="select")
     
     # Constraints
     __table_args__ = (

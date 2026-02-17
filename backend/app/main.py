@@ -6,7 +6,7 @@ from app.models.account import Account
 from app.models.category_rule import CategoryRule  # Import CategoryRule model
 from app.services.category_service import CategoryService
 from sqlalchemy import text
-from app.routes import auth, accounts, transactions, categories, budgets
+from app.routes import auth, accounts, transactions, categories, budgets, bills, rewards
 
 app = FastAPI(title="Modern Digital Banking API")
 
@@ -42,6 +42,8 @@ app.include_router(accounts.router)
 app.include_router(transactions.router)
 app.include_router(categories.router)
 app.include_router(budgets.router)
+app.include_router(bills.router)
+app.include_router(rewards.router)
 
 @app.get("/health")
 def health_check():

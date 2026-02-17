@@ -29,4 +29,19 @@ export const API_ENDPOINTS = {
   BUDGETS_WITH_SPENDING: '/budgets/with-spending',
   BUDGET_BY_ID: (id) => `/budgets/${id}`,
   BUDGET_WITH_SPENDING_BY_ID: (id) => `/budgets/${id}/with-spending`,
+  
+  // Bills
+  BILLS: '/bills',
+  BILL_BY_ID: (id) => `/bills/${id}`,
+  MARK_BILL_PAID: (id) => `/bills/${id}/mark-paid`,
+  BILLS_UPCOMING_SUMMARY: '/bills/upcoming/summary',
+  SEND_REMINDERS: '/bills/send-reminders',
+  
+  // Rewards
+  REWARDS: '/rewards',
+  REWARD_BY_ID: (id) => `/rewards/${id}`,
+  REWARDS_SUMMARY: '/rewards/summary',
+  ADD_POINTS: (id) => `/rewards/${id}/add-points`,
+  EXCHANGE_RATES: '/rewards/currency/rates',
+  REFRESH_RATES: '/rewards/currency/refresh',
 };

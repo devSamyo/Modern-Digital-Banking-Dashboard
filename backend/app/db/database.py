@@ -24,4 +24,5 @@ def get_db():
         yield db
     finally:
         db.close()
-        
+
+from app.models import user, budget, bill, reward

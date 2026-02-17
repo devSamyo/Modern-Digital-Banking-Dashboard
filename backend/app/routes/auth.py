@@ -53,6 +53,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 def read_current_user(current_user: User = Depends(get_current_user)):
     return {
         "id": current_user.id,
+        "name": current_user.name,
         "email": current_user.email,
+        "phone": current_user.phone,
         "kyc_status": current_user.kyc_status
     }

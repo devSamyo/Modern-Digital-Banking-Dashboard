@@ -24,6 +24,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear bill reminder session flag
+    sessionStorage.removeItem('billReminderShown');
+    
+    // Clear authentication
     localStorage.removeItem('access_token');
     setToken(null);
     setIsAuthenticated(false);

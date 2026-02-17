@@ -116,7 +116,7 @@ const TransactionsView = ({ accountId, onBack, onBalanceChange }) => {
       </div>
 
       <h2 className="text-2xl font-bold mb-4">
-        Transactions for Account #{accountId}
+        Transactions
       </h2>
 
       {/* No transactions message */}

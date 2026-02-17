@@ -15,4 +15,6 @@ class User(Base):
     created_at: Mapped[str] = mapped_column(TIMESTAMP, server_default=func.now())
     
     # Relationships
-    budgets = relationship("Budget", back_populates="user")
+    budgets = relationship("Budget", back_populates="user", lazy="dynamic")
+    bills = relationship("Bill", back_populates="user", lazy="dynamic")
+    rewards = relationship("Reward", back_populates="user", cascade="all, delete-orphan")

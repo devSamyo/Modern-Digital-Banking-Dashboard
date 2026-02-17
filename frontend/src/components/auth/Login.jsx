@@ -21,18 +21,27 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const response = await api.post(API_ENDPOINTS.LOGIN, formData);
       const { access_token } = response.data;
       
       login(access_token);
-      toast.success('Login successful! Welcome back!');
+      
+      // FIXED: Added duration to auto-dismiss
+      toast.success('Login successful! Welcome back!', {
+        duration: 3000,
+        id: 'login-success',
+      });
+      
       navigate('/dashboard');
     } catch (error) {
         // console.log('Full error:', error.response);
         // console.log('Error data:', error.response?.data);
-        toast.error(error.response?.data?.detail || 'Login failed!');
+        
+        // Also added duration to error toast
+        toast.error(error.response?.data?.detail || 'Login failed!', {
+          duration: 4000,
+        });
       }
   };
 

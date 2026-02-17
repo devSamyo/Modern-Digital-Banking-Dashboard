@@ -260,7 +260,7 @@ const BudgetManagement = () => {
             {/* Progress Bar */}
             <div className="mb-4">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs text-gray-600">Progress</span>
+                <span className="text-xs text-gray-600">Limit</span>
                 <span className="text-xs font-bold text-gray-700">
                   {budget.percentage_used.toFixed(1)}%
                 </span>
