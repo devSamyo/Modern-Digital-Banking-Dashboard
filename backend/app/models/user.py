@@ -18,3 +18,4 @@ class User(Base):
     budgets = relationship("Budget", back_populates="user", lazy="dynamic")
     bills = relationship("Bill", back_populates="user", lazy="dynamic")
     rewards = relationship("Reward", back_populates="user", cascade="all, delete-orphan")
+    alerts = relationship("Alert", back_populates="user", cascade="all, delete-orphan")

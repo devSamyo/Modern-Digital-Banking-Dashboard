@@ -44,4 +44,15 @@ export const API_ENDPOINTS = {
   ADD_POINTS: (id) => `/rewards/${id}/add-points`,
   EXCHANGE_RATES: '/rewards/currency/rates',
   REFRESH_RATES: '/rewards/currency/refresh',
+
+  // Insights
+  INSIGHTS_SUMMARY: '/insights/summary',
+  INSIGHTS_YEARLY_TREND: '/insights/yearly-trend',
+  
+  // Alerts
+  ALERTS: '/alerts',
+  ALERTS_SUMMARY: '/alerts/summary',
+  ALERT_MARK_READ: (id) => `/alerts/${id}/mark-read`,
+  ALERTS_MARK_ALL_READ: '/alerts/mark-all-read',
+  ALERT_DELETE: (id) => `/alerts/${id}`,
 };

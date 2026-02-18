@@ -4,6 +4,12 @@ import { API_ENDPOINTS } from '../../config';
 import toast from 'react-hot-toast';
 import BudgetSummary from '../budgets/BudgetSummary';
 import BillsSummary from '../bills/BillsSummary';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar } from 'recharts';
+import CategorySpendingChart from '../insights/CategorySpendingChart';
+import TopMerchantsChart from '../insights/TopMerchantsChart';
+import MonthlyCashFlowChart from '../insights/MonthlyCashFlowChart';
+
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
 const DashboardOverview = ({ onViewBudgets, onViewBills, onViewAccounts, onViewRewards }) => {
   const [stats, setStats] = useState({
@@ -16,11 +22,23 @@ const DashboardOverview = ({ onViewBudgets, onViewBills, onViewAccounts, onViewR
     totalRewardPoints: 0,
     totalRewardValueINR: 0,
   });
+  const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardStats();
+    loadInsights();
   }, []);
+
+  const loadInsights = async () => {
+    try {
+      const response = await api.get(`${API_ENDPOINTS.INSIGHTS_SUMMARY}?months=3`);
+      setInsights(response.data);
+    } catch (error) {
+      console.error('Error loading insights:', error);
+      // Don't show error toast, just log it
+    }
+  };
 
   const loadDashboardStats = async () => {
     try {
@@ -37,24 +55,11 @@ const DashboardOverview = ({ onViewBudgets, onViewBills, onViewAccounts, onViewR
       
       // Get current month as number (1-12)
       const now = new Date();
-      const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
-      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
       
-      console.log('Current month (number):', currentMonth);
-      console.log('Current year:', currentYear);
-      console.log('All budgets:', allBudgets);
-      
-      // Filter budgets for current month
-      // Your backend stores month as a NUMBER (1-12), not a string
       const currentMonthBudgets = allBudgets.filter(budget => {
-        // Check if budget.month matches current month number
-        const isCurrentMonth = budget.month === currentMonth;
-        console.log(`Budget month: ${budget.month}, Current: ${currentMonth}, Match: ${isCurrentMonth}`);
-        return isCurrentMonth;
+        return budget.month === currentMonth;
       });
-      
-      console.log('Filtered current month budgets:', currentMonthBudgets);
-      console.log('Current month budget count:', currentMonthBudgets.length);
 
       // Fetch bills
       const billsResponse = await api.get(API_ENDPOINTS.BILLS);
@@ -70,7 +75,7 @@ const DashboardOverview = ({ onViewBudgets, onViewBills, onViewAccounts, onViewR
         setStats({
           totalAccounts: accounts.length,
           totalBalance: totalBalance,
-          totalBudgets: currentMonthBudgets.length, // Only current month budgets
+          totalBudgets: currentMonthBudgets.length,
           totalBills: unpaidBills.length,
           overdueBills: overdueBills.length,
           totalRewards: rewards.total_programs || 0,
@@ -78,11 +83,10 @@ const DashboardOverview = ({ onViewBudgets, onViewBills, onViewAccounts, onViewR
           totalRewardValueINR: rewards.total_value_inr || 0,
         });
       } catch (rewardError) {
-        // If rewards fails, still show other stats
         setStats({
           totalAccounts: accounts.length,
           totalBalance: totalBalance,
-          totalBudgets: currentMonthBudgets.length, // Only current month budgets
+          totalBudgets: currentMonthBudgets.length,
           totalBills: unpaidBills.length,
           overdueBills: overdueBills.length,
           totalRewards: 0,
@@ -108,7 +112,6 @@ const DashboardOverview = ({ onViewBudgets, onViewBills, onViewAccounts, onViewR
     );
   }
 
-  // Get current month name for display
   const getCurrentMonthName = () => {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -207,6 +210,31 @@ const DashboardOverview = ({ onViewBudgets, onViewBills, onViewAccounts, onViewR
               <p className="text-xs opacity-75 mt-2">{stats.totalRewardPoints.toLocaleString()} total points</p>
             </div>
             <div className="text-6xl">💎</div>
+          </div>
+        </div>
+      )}
+
+      {/* INSIGHTS GRAPHS SECTION */}
+      {insights && (
+        <div className="space-y-6 mb-8">
+          <h3 className="text-2xl font-bold text-gray-800">📈 Financial Insights (Last 3 Months)</h3>
+          
+          {/* Monthly Cash Flow Chart */}
+          {insights.monthly_cash_flow && insights.monthly_cash_flow.length > 0 && (
+            <MonthlyCashFlowChart data={insights.monthly_cash_flow} />
+          )}
+
+          {/* Grid: Category Spending + Top Merchants */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Category Spending Pie Chart */}
+            {insights.category_spending && insights.category_spending.length > 0 && (
+              <CategorySpendingChart data={insights.category_spending} />
+            )}
+
+            {/* Top 5 Merchants Bar Chart */}
+            {insights.top_merchants && insights.top_merchants.length > 0 && (
+              <TopMerchantsChart data={insights.top_merchants} />
+            )}
           </div>
         </div>
       )}

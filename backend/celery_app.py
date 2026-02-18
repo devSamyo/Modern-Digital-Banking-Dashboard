@@ -23,26 +23,30 @@ celery_app.conf.update(
     worker_max_tasks_per_child=1000,
 )
 
-# ==========================================
-# TESTING SCHEDULE - Every few minutes
-# ==========================================
+
 celery_app.conf.beat_schedule = {
-    # Check and send bill reminders every 3 minutes (FOR TESTING)
-    'check-bill-reminders-every-3-min': {
+    # Check and send bill reminders every 1 hour 
+    'check-bill-reminders-every-1-hour': {
         'task': 'app.tasks.check_and_send_bill_reminders',
-        'schedule': 15.0,  # Every 180 seconds = 3 minutes
+        'schedule': crontab(minute=0),  # Every hour at :00
     },
     
-    # Reset reminder flags every 5 minutes (FOR TESTING)
-    'reset-reminder-flags-every-5-min': {
+    # Reset reminder flags daily at midnight
+    'reset-reminder-flags-daily': {
         'task': 'app.tasks.reset_reminder_flags',
-        'schedule': 30.0,  # Every 300 seconds = 5 minutes
+        'schedule': crontab(hour=0, minute=0),  # Daily at midnight
     },
     
-    # Refresh exchange rates every 30 minutes (FOR TESTING)
-    'refresh-exchange-rates-every-30-min': {
+    # Refresh exchange rates every 6 hours
+    'refresh-exchange-rates-every-6-hours': {
         'task': 'app.tasks.refresh_exchange_rates',
-        'schedule': 1800.0,  # Every 1800 seconds = 30 minutes
+        'schedule': crontab(minute=0, hour='*/6'),  # Every 6 hours at :00
+    },
+    
+    # Generate alerts every 6 hours
+    'generate-alerts-every-6-hours': {
+        'task': 'app.tasks.generate_alerts',
+        'schedule': crontab(minute=0, hour='*/6'),  # Every 6 hours at :00
     },
 }
 

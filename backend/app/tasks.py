@@ -2,6 +2,7 @@ from celery import Celery
 from app.db.database import SessionLocal
 from app.services.bill_reminder_service import BillReminderService
 from app.services.currency_service import ActiveCurrencyService
+from app.services.alert_service import AlertService
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -129,3 +130,40 @@ def test_task():
     """
     logger.info("✅ Test task executed successfully!")
     return {"status": "success", "message": "Celery is working!"}
+
+
+@celery_app.task(name='app.tasks.generate_alerts', bind=True)
+def generate_alerts(self):
+    """
+    Celery task: Generate alerts automatically.
+    Runs every hour to check for:
+    - Low balance accounts
+    - Upcoming bills
+    - Budget exceeded
+    """
+    logger.info("=" * 80)
+    logger.info("🔔 Celery task started: generate_alerts")
+    logger.info(f"   Task ID: {self.request.id}")
+    logger.info("=" * 80)
+    
+    db = SessionLocal()
+    try:
+        result = AlertService.generate_all_alerts(db)
+        
+        logger.info("=" * 80)
+        logger.info(f"✅ Alerts generated successfully!")
+        logger.info(f"   Total: {result['total']}")
+        logger.info(f"   Low balance: {result['low_balance']}")
+        logger.info(f"   Bill due: {result['bill_due']}")
+        logger.info(f"   Budget exceeded: {result['budget_exceeded']}")
+        logger.info("=" * 80)
+        
+        return result
+        
+    except Exception as e:
+        logger.error("=" * 80)
+        logger.error(f"❌ Error generating alerts: {str(e)}")
+        logger.error("=" * 80)
+        raise
+    finally:
+        db.close()
