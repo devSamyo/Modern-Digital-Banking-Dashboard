@@ -7,7 +7,7 @@ from app.models.category_rule import CategoryRule
 from app.services.category_service import CategoryService
 from app.services.alert_service import AlertService
 from sqlalchemy import text
-from app.routes import auth, accounts, transactions, categories, budgets, bills, rewards, insights, alerts
+from app.routes import auth, accounts, transactions, categories, budgets, bills, rewards, insights, alerts, reports
 import logging
 
 # Set up logging
@@ -61,6 +61,7 @@ app.include_router(bills.router)
 app.include_router(rewards.router)
 app.include_router(insights.router)
 app.include_router(alerts.router)
+app.include_router(reports.router)
 
 @app.get("/health")
 def health_check():

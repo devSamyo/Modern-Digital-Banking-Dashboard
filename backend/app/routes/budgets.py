@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from datetime import datetime
-
+import csv
+import io
 from app.db.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
@@ -90,6 +92,73 @@ def get_budgets_with_spending(
     )
     
     return budgets_with_spending
+
+@router.get("/export")
+def export_budgets_csv(
+    month: Optional[int] = Query(None, ge=1, le=12),
+    year: Optional[int] = Query(None, ge=2000, le=2100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Export budgets with spending as CSV"""
+    # Default to current month/year if not provided
+    if not month:
+        month = datetime.now().month
+    if not year:
+        year = datetime.now().year
+    
+    # Get budgets with spending
+    budgets_with_spending = BudgetService.get_all_budgets_with_spending(
+        db=db,
+        user_id=current_user.id,
+        month=month,
+        year=year
+    )
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow([
+        'Category',
+        'Month',
+        'Year',
+        'Budget Limit',
+        'Spent Amount',
+        'Remaining Amount',
+        'Percentage Used',
+        'Status'
+    ])
+    
+    # Write budget data
+    months_names = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+    
+    for budget in budgets_with_spending:
+        status = 'Over Budget' if budget['is_over_budget'] else 'Within Budget'
+        writer.writerow([
+            budget['category'],
+            months_names[budget['month'] - 1],
+            budget['year'],
+            f"{budget['limit_amount']:.2f}",
+            f"{budget['spent_amount']:.2f}",
+            f"{budget['remaining_amount']:.2f}",
+            f"{budget['percentage_used']:.2f}%",
+            status
+        ])
+    
+    # Prepare response
+    output.seek(0)
+    filename = f"budgets_{months_names[month - 1]}_{year}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @router.get("/{budget_id}", response_model=BudgetOut)
 def get_budget(
