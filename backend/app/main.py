@@ -9,6 +9,7 @@ from app.services.alert_service import AlertService
 from sqlalchemy import text
 from app.routes import auth, accounts, transactions, categories, budgets, bills, rewards, insights, alerts, reports
 import logging
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -16,14 +17,15 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Modern Digital Banking API")
 
+# Get allowed origins from environment variable or use defaults
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://127.0.0.1:5173,http://localhost:5173"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ],
+    allow_origins=ALLOWED_ORIGINS + ["*"],  # Allow all origins in production (or specify your Vercel URL)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
