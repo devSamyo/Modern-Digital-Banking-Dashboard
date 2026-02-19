@@ -28,9 +28,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - redirect to login
-      localStorage.removeItem('access_token');
-      window.location.href = '/login';
+      // Only redirect to login if we're NOT already on the login/register page
+      // and if there was a token (meaning this is an expired session)
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath === '/login' || currentPath === '/register';
+      const hadToken = localStorage.getItem('access_token');
+      
+      if (!isAuthPage && hadToken) {
+        // Unauthorized - user session expired, redirect to login
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

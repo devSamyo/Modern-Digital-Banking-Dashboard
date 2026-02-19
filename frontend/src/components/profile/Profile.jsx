@@ -2,10 +2,19 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config';
 import toast from 'react-hot-toast';
+import Modal from '../common/Modal';
 
 const Profile = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
 
   useEffect(() => {
     loadUserProfile();
@@ -18,12 +27,80 @@ const Profile = () => {
       setUserInfo(response.data);
     } catch (error) {
       console.error('Error loading profile:', error);
-      toast.error('Failed to load profile', {
-        duration: 3000,
-      });
+      toast.error('Failed to load profile', { duration: 3000 });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Password strength checker
+  const checkPasswordStrength = (password) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      digit: /\d/.test(password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    };
+
+    const satisfiedCount = Object.values(requirements).filter(Boolean).length;
+    
+    let strength = 'Weak';
+    let color = 'red';
+    let widthPercent = 20;
+
+    if (satisfiedCount === 5) {
+      strength = 'Strong';
+      color = 'green';
+      widthPercent = 100;
+    } else if (satisfiedCount >= 3) {
+      strength = 'Medium';
+      color = 'yellow';
+      widthPercent = 60;
+    }
+
+    return { requirements, strength, color, widthPercent };
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    
+    // Validate passwords match
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    // Check password strength
+    const { requirements } = checkPasswordStrength(passwordForm.new_password);
+    const allRequirementsMet = Object.values(requirements).every(Boolean);
+    
+    if (!allRequirementsMet) {
+      toast.error('Please meet all password requirements');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await api.put(API_ENDPOINTS.CHANGE_PASSWORD, {
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password
+      });
+      
+      toast.success('Password changed successfully!');
+      setShowChangePasswordModal(false);
+      setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Failed to change password';
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const cancelPasswordChange = () => {
+    setShowChangePasswordModal(false);
+    setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
   };
 
   const getKycStatusColor = (status) => {
@@ -56,15 +133,6 @@ const Profile = () => {
     return texts[status] || 'Unknown';
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -81,6 +149,10 @@ const Profile = () => {
     );
   }
 
+  const passwordStrength = passwordForm.new_password 
+    ? checkPasswordStrength(passwordForm.new_password) 
+    : null;
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
@@ -94,15 +166,12 @@ const Profile = () => {
         {/* Header Section with Avatar */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-12 text-white">
           <div className="flex items-center gap-6">
-            {/* Avatar */}
             <div className="w-24 h-24 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-4xl font-bold backdrop-blur-sm border-4 border-white border-opacity-30">
               {userInfo.name?.charAt(0).toUpperCase() || '?'}
             </div>
             
-            {/* User Info */}
             <div>
               <h3 className="text-3xl font-bold mb-1">{userInfo.name || 'User'}</h3>
-              {/* <p className="text-blue-100 text-sm">Member since {formatDate(userInfo.created_at)}</p> */}
             </div>
           </div>
         </div>
@@ -160,25 +229,16 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* KYC Alert (if not verified)
-          {userInfo.kyc_status !== 'verified' && (
-            <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">⚠️</span>
-                <div>
-                  <h4 className="font-semibold text-yellow-900 mb-1">
-                    KYC Verification Required
-                  </h4>
-                  <p className="text-sm text-yellow-800">
-                    Complete your KYC verification to unlock all features and increase your transaction limits.
-                  </p>
-                  <button className="mt-3 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium">
-                    Complete KYC Verification
-                  </button>
-                </div>
-              </div>
-            </div>
-          )} */}
+          {/* Change Password Button */}
+          <div className="mt-8">
+            <button
+              onClick={() => setShowChangePasswordModal(true)}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+            >
+              <span>🔒</span>
+              Change Password
+            </button>
+          </div>
 
           {/* Account Stats */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -202,30 +262,129 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Additional Info Card */}
-      {/* <div className="mt-6 bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">📋 Account Information</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Account Created</span>
-            <span className="font-medium text-gray-800">{formatDate(userInfo.created_at)}</span>
+      {/* ═══ MODAL: Change Password ═══ */}
+      <Modal
+        isOpen={showChangePasswordModal}
+        onClose={cancelPasswordChange}
+        title="Change Password"
+      >
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          {/* Current Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Current Password <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={passwordForm.current_password}
+              onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter current password"
+            />
           </div>
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Email Verified</span>
-            <span className="font-medium text-green-600">✓ Verified</span>
+
+          {/* New Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              New Password <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={passwordForm.new_password}
+              onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+              required
+              minLength={8}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter new password"
+            />
+            
+            {/* Password Strength Indicator */}
+            {passwordStrength && passwordForm.new_password && (
+              <div className="mt-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-medium text-gray-600">Password Strength:</span>
+                  <span className={`text-xs font-bold text-${passwordStrength.color}-600`}>
+                    {passwordStrength.strength}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`bg-${passwordStrength.color}-500 h-2 rounded-full transition-all duration-300`}
+                    style={{ width: `${passwordStrength.widthPercent}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Password Requirements */}
+            {passwordStrength && passwordForm.new_password && (
+              <div className="mt-3 space-y-1">
+                <p className="text-xs font-medium text-gray-600 mb-1">Requirements:</p>
+                <div className="text-xs space-y-1">
+                  <div className={`flex items-center gap-2 ${passwordStrength.requirements.length ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span>{passwordStrength.requirements.length ? '✓' : '○'}</span>
+                    <span>At least 8 characters</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${passwordStrength.requirements.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span>{passwordStrength.requirements.uppercase ? '✓' : '○'}</span>
+                    <span>One uppercase letter</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${passwordStrength.requirements.lowercase ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span>{passwordStrength.requirements.lowercase ? '✓' : '○'}</span>
+                    <span>One lowercase letter</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${passwordStrength.requirements.digit ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span>{passwordStrength.requirements.digit ? '✓' : '○'}</span>
+                    <span>One digit</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${passwordStrength.requirements.special ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span>{passwordStrength.requirements.special ? '✓' : '○'}</span>
+                    <span>One special character (!@#$%^&*...)</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex justify-between py-2 border-b border-gray-100">
-            <span className="text-gray-600">Phone Verified</span>
-            <span className="font-medium text-gray-400">
-              {userInfo.phone ? '✓ Verified' : '✗ Not Added'}
-            </span>
+
+          {/* Confirm New Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm New Password <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={passwordForm.confirm_password}
+              onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+              required
+              minLength={8}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Confirm new password"
+            />
+            {passwordForm.confirm_password && passwordForm.new_password !== passwordForm.confirm_password && (
+              <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+            )}
           </div>
-          <div className="flex justify-between py-2">
-            <span className="text-gray-600">Two-Factor Authentication</span>
-            <span className="font-medium text-gray-400">✗ Not Enabled</span>
+
+          {/* Buttons */}
+          <div className="flex gap-3 mt-6">
+            <button
+              type="submit"
+              disabled={submitting || !passwordForm.current_password || !passwordForm.new_password || !passwordForm.confirm_password}
+              className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+            >
+              {submitting ? 'Changing Password...' : 'Change Password'}
+            </button>
+            <button
+              type="button"
+              onClick={cancelPasswordChange}
+              className="flex-1 bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500 font-medium transition-colors"
+            >
+              Cancel
+            </button>
           </div>
-        </div>
-      </div> */}
+        </form>
+      </Modal>
     </div>
   );
 };
