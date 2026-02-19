@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { API_ENDPOINTS } from '../../config';
+import { API_ENDPOINTS, API_BASE_URL } from '../../config';
 import LoadingSpinner from '../common/LoadingSpinner';
 import Modal from '../common/Modal';
 
@@ -9,6 +9,7 @@ const BudgetManagement = () => {
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -54,6 +55,52 @@ const BudgetManagement = () => {
       toast.error('Failed to load budgets');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      setExporting(true);
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        toast.error('Authentication token not found. Please log in again.');
+        return;
+      }
+      
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.EXPORT_BUDGETS_CSV}?month=${selectedMonth}&year=${selectedYear}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'text/csv'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Export error:', errorText);
+        throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `budgets_${months[selectedMonth - 1]}_${selectedYear}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Budgets exported successfully!');
+    } catch (error) {
+      console.error('Error exporting budgets:', error);
+      toast.error(error.message || 'Failed to export budgets');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -141,12 +188,33 @@ const BudgetManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Budget Management</h2>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium transition-colors"
-        >
-          + Create Budget
-        </button>
+        <div className="flex gap-2">
+          {/* Export CSV Button */}
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting || budgets.length === 0}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {exporting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Exporting...
+              </>
+            ) : (
+              <>
+                📥 Export CSV
+              </>
+            )}
+          </button>
+          
+          {/* Create Budget Button */}
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium transition-colors"
+          >
+            + Create Budget
+          </button>
+        </div>
       </div>
 
       {/* Month/Year Filter */}

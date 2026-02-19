@@ -17,6 +17,8 @@ export const API_ENDPOINTS = {
   TRANSACTIONS_BY_ACCOUNT: (accountId) => `/accounts/${accountId}/transactions`,
   TRANSACTION_BY_ID: (id) => `/transactions/${id}`,
   UPDATE_TRANSACTION_CATEGORY: (id) => `/transactions/${id}/category`,
+  EXPORT_TRANSACTIONS_CSV: (accountId) => `/accounts/${accountId}/transactions/export`,
+  IMPORT_TRANSACTIONS_CSV: (accountId) => `/accounts/${accountId}/transactions/import`,
   
   // Categories
   CATEGORIES: '/categories',
@@ -29,6 +31,7 @@ export const API_ENDPOINTS = {
   BUDGETS_WITH_SPENDING: '/budgets/with-spending',
   BUDGET_BY_ID: (id) => `/budgets/${id}`,
   BUDGET_WITH_SPENDING_BY_ID: (id) => `/budgets/${id}/with-spending`,
+  EXPORT_BUDGETS_CSV: '/budgets/export',
   
   // Bills
   BILLS: '/bills',
@@ -44,7 +47,7 @@ export const API_ENDPOINTS = {
   ADD_POINTS: (id) => `/rewards/${id}/add-points`,
   EXCHANGE_RATES: '/rewards/currency/rates',
   REFRESH_RATES: '/rewards/currency/refresh',
-
+  
   // Insights
   INSIGHTS_SUMMARY: '/insights/summary',
   INSIGHTS_YEARLY_TREND: '/insights/yearly-trend',
@@ -55,4 +58,8 @@ export const API_ENDPOINTS = {
   ALERT_MARK_READ: (id) => `/alerts/${id}/mark-read`,
   ALERTS_MARK_ALL_READ: '/alerts/mark-all-read',
   ALERT_DELETE: (id) => `/alerts/${id}`,
+
+  // Reports
+  REPORT_MONTHLY_SUMMARY: '/reports/monthly-summary',
+  REPORT_CATEGORY_BREAKDOWN: '/reports/category-breakdown',
 };

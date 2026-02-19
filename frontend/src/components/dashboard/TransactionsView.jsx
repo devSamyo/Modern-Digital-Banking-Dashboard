@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import TransactionForm from './TransactionForm';
 import Modal from '../common/Modal';
 import LoadingSpinner from '../common/LoadingSpinner';
 import api from '../../services/api';
-import { API_ENDPOINTS } from '../../config';
+import { API_ENDPOINTS, API_BASE_URL } from '../../config';
 
 const TransactionsView = ({ accountId, onBack, onBalanceChange }) => {
   const [transactions, setTransactions] = useState([]);
@@ -12,6 +12,9 @@ const TransactionsView = ({ accountId, onBack, onBalanceChange }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadTransactions();
@@ -37,7 +40,6 @@ const TransactionsView = ({ accountId, onBack, onBalanceChange }) => {
       setCategories(response.data);
     } catch (error) {
       console.error('Error loading categories:', error);
-      // If categories API fails, use default categories
       setCategories([
         { name: 'Food & Dining' },
         { name: 'Transportation' },
@@ -55,7 +57,6 @@ const TransactionsView = ({ accountId, onBack, onBalanceChange }) => {
     setShowCreateForm(false);
     loadTransactions();
     
-    // Notify parent that balance has changed
     if (onBalanceChange) {
       onBalanceChange();
     }
@@ -69,12 +70,122 @@ const TransactionsView = ({ accountId, onBack, onBalanceChange }) => {
       
       toast.success('Category updated successfully!');
       setEditingCategoryId(null);
-      
-      // Refresh transactions list
       loadTransactions();
     } catch (error) {
       console.error('Error updating category:', error);
       toast.error(error.response?.data?.detail || 'Failed to update category');
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      setExporting(true);
+      const token = localStorage.getItem('access_token');
+
+      if (!token) {
+        toast.error('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.EXPORT_TRANSACTIONS_CSV(accountId)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'text/csv'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Export error:', errorText);
+        throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transactions_${accountId}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('Transactions exported successfully!');
+    } catch (error) {
+      console.error('Error exporting transactions:', error);
+      toast.error(error.message || 'Failed to export transactions');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+    
+    try {
+      setImporting(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.IMPORT_TRANSACTIONS_CSV(accountId)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        }
+      );
+      
+      const result = await response.json();
+      
+      // DEBUG: Log the full response
+      console.log('Import response:', result);
+      console.log('Headers found:', result.headers_found);
+      
+      if (!response.ok) {
+        throw new Error(result.detail || 'Import failed');
+      }
+      
+      toast.success(
+        `Import completed! ${result.imported} imported, ${result.skipped} skipped`,
+        { duration: 4000 }
+      );
+      
+      if (result.errors && result.errors.length > 0) {
+        console.warn('Import errors:', result.errors);
+        toast.error(`${result.errors.length} rows had errors. Check console for details.`, {
+          duration: 5000
+        });
+      }
+      
+      loadTransactions();
+      if (onBalanceChange) {
+        onBalanceChange();
+      }
+      
+    } catch (error) {
+      console.error('Error importing transactions:', error);
+      toast.error(error.message || 'Failed to import transactions');
+    } finally {
+      setImporting(false);
+      event.target.value = '';
     }
   };
 
@@ -107,17 +218,77 @@ const TransactionsView = ({ accountId, onBack, onBalanceChange }) => {
         >
           ← Back
         </button>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium text-sm transition-colors"
-        >
-          + Add Transaction
-        </button>
+        
+        <div className="flex gap-2">
+          {/* Export CSV Button */}
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting || transactions.length === 0}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-medium text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {exporting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Exporting...
+              </>
+            ) : (
+              <>
+                📥 Export CSV
+              </>
+            )}
+          </button>
+          
+          {/* Import CSV Button */}
+          <button
+            onClick={handleImportClick}
+            disabled={importing}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 font-medium text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {importing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                Importing...
+              </>
+            ) : (
+              <>
+                📤 Import CSV
+              </>
+            )}
+          </button>
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          
+          {/* Add Transaction Button */}
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium text-sm transition-colors"
+          >
+            + Add Transaction
+          </button>
+        </div>
       </div>
 
       <h2 className="text-2xl font-bold mb-4">
         Transactions
       </h2>
+
+      {/* CSV Import Instructions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <p className="text-sm text-blue-800 font-semibold mb-2">📋 CSV Import Format</p>
+        <p className="text-xs text-blue-700">
+          Required columns: <code className="bg-blue-100 px-1 rounded">Date, Description, Amount, Type</code><br/>
+          Optional columns: <code className="bg-blue-100 px-1 rounded">Merchant, Currency</code><br/>
+          Date format: <code className="bg-blue-100 px-1 rounded">YYYY-MM-DD HH:MM:SS</code> or <code className="bg-blue-100 px-1 rounded">YYYY-MM-DD</code><br/>
+          Type must be: <code className="bg-blue-100 px-1 rounded">debit</code> or <code className="bg-blue-100 px-1 rounded">credit</code>
+        </p>
+      </div>
 
       {/* No transactions message */}
       {transactions.length === 0 && !showCreateForm && (

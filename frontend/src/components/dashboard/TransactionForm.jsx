@@ -4,12 +4,24 @@ import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config';
 
 const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
+  // Get current date and time in local format for datetime-local input
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState({
     merchant: '',
     description: '',
     amount: '',
-    currency: '',
+    currency: 'INR',
     txn_type: '',
+    txn_date: getCurrentDateTime(),
   });
 
   const handleChange = (e) => {
@@ -20,6 +32,9 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Convert datetime-local to ISO format
+    const txnDate = new Date(formData.txn_date).toISOString();
+
     const payload = {
       account_id: parseInt(accountId),
       merchant: formData.merchant || null,
@@ -27,6 +42,7 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
       amount: parseFloat(formData.amount),
       currency: formData.currency.toUpperCase(),
       txn_type: formData.txn_type,
+      txn_date: txnDate,
     };
 
     try {
@@ -42,6 +58,23 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
   return (
     <div>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Transaction Date & Time */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Transaction Date & Time:
+          </label>
+          <input
+            type="datetime-local"
+            name="txn_date"
+            value={formData.txn_date}
+            onChange={handleChange}
+            required
+            max={getCurrentDateTime()}
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">When did this transaction occur?</p>
+        </div>
+
         {/* Merchant */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -52,7 +85,7 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
             name="merchant"
             value={formData.merchant}
             onChange={handleChange}
-            placeholder="Optional"
+            placeholder="e.g., Amazon, Starbucks (Optional)"
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -67,6 +100,7 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
             name="description"
             value={formData.description}
             onChange={handleChange}
+            placeholder="e.g., Grocery shopping, Movie tickets"
             required
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -82,8 +116,9 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
             name="amount"
             value={formData.amount}
             onChange={handleChange}
+            placeholder="0.00"
             required
-            min="0"
+            min="0.01"
             step="0.01"
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -104,7 +139,7 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
             minLength={3}
             maxLength={3}
             pattern="[A-Za-z]{3}"
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
           />
         </div>
 
@@ -121,8 +156,8 @@ const TransactionForm = ({ accountId, onSuccess, onCancel }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select Type</option>
-            <option value="debit">Debit</option>
-            <option value="credit">Credit</option>
+            <option value="debit">💸 Debit (Money Out)</option>
+            <option value="credit">💰 Credit (Money In)</option>
           </select>
         </div>
 

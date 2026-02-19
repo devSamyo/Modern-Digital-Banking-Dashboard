@@ -10,6 +10,7 @@ import BillManagement from '../bills/BillManagement';
 import RewardManagement from '../rewards/RewardManagement';
 import Profile from '../profile/Profile';
 import AlertsCenter from '../alerts/AlertsCenter';
+import ReportsCenter from '../reports/ReportsCenter';
 import BillReminderNotification from '../bills/BillReminderNotification';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../config';
@@ -152,6 +153,14 @@ const Dashboard = () => {
               🎁 Rewards
             </button>
             <button
+              onClick={() => setCurrentView('reports')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+                currentView === 'reports' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              📊 Reports
+            </button>
+            <button
               onClick={() => setCurrentView('alerts')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap relative ${
                 currentView === 'alerts' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -211,6 +220,7 @@ const Dashboard = () => {
           {currentView === 'budgets' && <BudgetManagement />}
           {currentView === 'bills' && <BillManagement />}
           {currentView === 'rewards' && <RewardManagement />}
+          {currentView === 'reports' && <ReportsCenter />}
           {currentView === 'profile' && <Profile />}
         </div>
       </main>
